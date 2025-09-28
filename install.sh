@@ -36,17 +36,7 @@ async def convert(file: UploadFile = File(...)):
 
 @app.get("/form", response_class=HTMLResponse)
 async def form():
-    return """<!DOCTYPE html>
-<html>
-<head><meta charset='UTF-8'><title>Upload Form</title></head>
-<body>
-<h1>Upload a Word document</h1>
-<form action='/convert' method='post' enctype='multipart/form-data'>
-    <input type='file' name='file' accept='.doc,.docx' required>
-    <button type='submit'>Convert</button>
-</form>
-</body>
-</html>"""
+    return "<!DOCTYPE html>\n<html>\n<head><meta charset='UTF-8'><title>Upload Form</title></head>\n<body>\n<h1>Upload a Word document</h1>\n<form action='/convert' method='post' enctype='multipart/form-data'>\n    <input type='file' name='file' accept='.doc,.docx' required>\n    <button type='submit'>Convert</button>\n</form>\n</body>\n</html>"
 PY
 
 # Determine the package manager and install required packages
@@ -72,14 +62,15 @@ install_packages() {
   fi
 }
 
-# Install dependencies: Python, pip, antiword, libreoffice
-install_packages python3 python3-pip antiword libreoffice || true
+# Install dependencies: Python, pip, venv, antiword, libreoffice
+install_packages python3 python3-pip python3-venv antiword libreoffice || true
 
-# Install pip packages
-PYTHON=$(command -v python3 || command -v python)
-$PYTHON -m ensurepip --upgrade || true
-$PYTHON -m pip install --upgrade pip
-$PYTHON -m pip install fastapi uvicorn python-docx
+# Create Python virtual environment
+python3 -m venv /opt/doc_converter/venv
+
+# Upgrade pip and install Python packages inside the virtual environment
+/opt/doc_converter/venv/bin/pip install --upgrade pip
+/opt/doc_converter/venv/bin/pip install fastapi uvicorn python-docx
 
 # Create a systemd service file for the converter
 cat > /etc/systemd/system/doc_converter.service <<'SERVICE'
@@ -91,7 +82,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/opt/doc_converter
-ExecStart=/usr/bin/python3 -m uvicorn app:app --host 0.0.0.0 --port 8000
+ExecStart=/opt/doc_converter/venv/bin/uvicorn app:app --host 0.0.0.0 --port 8000
 Restart=always
 
 [Install]
